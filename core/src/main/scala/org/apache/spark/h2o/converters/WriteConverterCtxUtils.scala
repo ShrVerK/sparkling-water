@@ -94,9 +94,9 @@ object WriteConverterCtxUtils {
     } else {
       expectedTypes
     }
-    val fr = new H2OFrame(finalizeFrame(keyName, res, types)) 
+    val fr = new H2OFrame(finalizeFrame(keyName, res, types))
 
-    if(Log.isLoggingFor("DEBUG")) {
+    if (Log.isLoggingFor("DEBUG")) {
       Log.debug("Number of chunks on frame: " + fr.anyVec.nChunks)
       val nodes = mutable.Map.empty[H2ONode, Int]
       (0 until fr.anyVec().nChunks()).foreach { i =>
@@ -115,17 +115,49 @@ object WriteConverterCtxUtils {
 
     val layouts = fr.vecs().map(_.espc())
 
-    if(!layouts.isEmpty){
-      val first = layouts.head
-      layouts.tail.foreach{ espc => if(first != espc){
-        throw new IllegalArgumentException(
-        s"""
-          | Invalid shape of H2O Frame:
-          |
-          | ${layouts.zipWithIndex.map{case (arr, idx) => s"Vec $idx has layout: ${arr.mkString(", ")}\n"}}
-          |
+    // Validate num of chunks in each vector
+    if (!fr.vecs().isEmpty) {
+      val first = fr.vecs.head
+      fr.vecs.tail.foreach { vec =>
+        if (vec.nChunks() != first.nChunks()) {
+          throw new IllegalArgumentException(
+            s"""
+               | Vectors have different number of chunks: ${fr.vecs().map(_.nChunks()).mkString(", ")}
+        """.stripMargin)
         }
-        """.stripMargin)}}
+      }
+    }
+
+    // Validate that espc is the same in each vector
+    if (!layouts.isEmpty) {
+      val first = layouts.head
+      layouts.tail.foreach { espc =>
+        if (first != espc) {
+          throw new IllegalArgumentException(
+            s"""
+               | Invalid shape of H2O Frame:
+               |
+          | ${layouts.zipWithIndex.map { case (arr, idx) => s"Vec $idx has layout: ${arr.mkString(", ")}\n" }}
+               |
+        }
+        """.stripMargin)
+        }
+      }
+    }
+
+    // Check number of entries in each chunk
+    if (!fr.vecs().isEmpty) {
+      val first = fr.vecs.head
+      val chunkLenTemplate = (0 until first.nChunks()).map { idx => first.chunkForChunkIdx(idx).len() }.toArray
+
+      fr.vecs.tail.foreach { vec =>
+        (0 until first.nChunks()).foreach { idx =>
+          if (chunkLenTemplate(idx) != vec.chunkForChunkIdx(idx).len()) {
+            throw new IllegalArgumentException(s"Chunk $idx have different sizes on vector $first and $vec")
+          }
+        }
+
+      }
     }
 
     fr
