@@ -112,6 +112,22 @@ object WriteConverterCtxUtils {
           Log.debug(node + ": " + n + " chunks.")
       }
     }
+
+    val layouts = fr.vecs().map(_.espc())
+
+    if(!layouts.isEmpty){
+      val first = layouts.head
+      layouts.tail.foreach{ espc => if(first != espc){
+        throw new IllegalArgumentException(
+        s"""
+          | Invalid shape of H2O Frame:
+          |
+          | ${layouts.zipWithIndex.map{case (arr, idx) => s"Vec $idx has layout: ${arr.mkString(", ")}\n"}}
+          |
+        }
+        """.stripMargin)}}
+    }
+
     fr
   }
 
