@@ -113,8 +113,6 @@ object WriteConverterCtxUtils {
       }
     }
 
-    val layouts = fr.vecs().map(_.espc())
-
     // Validate num of chunks in each vector
     if (!fr.vecs().isEmpty) {
       val first = fr.vecs.head
@@ -129,7 +127,8 @@ object WriteConverterCtxUtils {
     }
 
     // Validate that espc is the same in each vector
-    if (!layouts.isEmpty) {
+    if (!fr.vecs().isEmpty) {
+      val layouts = fr.vecs().map(_.espc())
       val first = layouts.head
       layouts.tail.foreach { espc =>
         if (first != espc) {
