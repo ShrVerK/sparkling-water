@@ -152,7 +152,8 @@ object WriteConverterCtxUtils {
       fr.vecs.tail.foreach { vec =>
         (0 until first.nChunks()).foreach { idx =>
           if (chunkLenTemplate(idx) != vec.chunkForChunkIdx(idx).len()) {
-            throw new IllegalArgumentException(s"Chunk $idx have different sizes on vector $first and $vec")
+            throw new IllegalArgumentException(s"Chunk $idx have different sizes: " +
+              s"${chunkLenTemplate(idx)} - $first and ${ vec.chunkForChunkIdx(idx).len()} - $vec")
           }
         }
 
